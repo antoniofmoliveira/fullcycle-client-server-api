@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -46,23 +47,34 @@ const msgInternalError = "error while querying exchange rate"
 
 var DBS gorm.DB
 
-
 // main initializes the database and starts the server. It listens for SIGINT,
 // SIGTERM and SIGHUP signals and shuts down the server when it receives one.
 // It logs "server: shutting down" before exiting.
 func main() {
 	initializeDb()
 
-	termChan := make(chan os.Signal, 1)
-	signal.Notify(termChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+	server := &http.Server{Addr: ":8080"}
+	http.HandleFunc("/cotacao", getExchangeRate)
+
 	go func() {
-		<-termChan
-		log.Println("server: shutting down")
-		os.Exit(0)
+		fmt.Println("Server is running at http://localhost:8080")
+		if err := server.ListenAndServe(); err != nil && http.ErrServerClosed != err {
+			log.Fatalf("Could not listen on %s: %v\n", server.Addr, err)
+		}
 	}()
 
-	http.HandleFunc("/cotacao", getExchangeRate)
-	http.ListenAndServe(":8080", nil)
+	termChan := make(chan os.Signal, 1)
+	signal.Notify(termChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+
+	<-termChan
+	log.Println("server: shutting down")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := server.Shutdown(ctx); err != nil {
+		log.Fatalf("Could not shutdown the server: %v\n", err)
+	}
+	fmt.Println("Server stopped")
+	os.Exit(0)
 
 }
 
@@ -103,7 +115,6 @@ func getExchangeRate(w http.ResponseWriter, r *http.Request) {
 
 	select {
 	case <-ctxQER.Done():
-
 		go log.Println(msgQERTimeOut)
 		w.WriteHeader(http.StatusGatewayTimeout)
 		json.NewEncoder(w).Encode(Message{Message: msgQERTimeOut})
@@ -114,7 +125,7 @@ func getExchangeRate(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(Message{Message: msgClientTimeout})
 		return
 	default:
-		cotacao, err := execQuery(ctxQER)
+		excRate, err := execQuery(ctxQER)
 		if err != nil {
 			go log.Println(msgInternalError, err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -122,24 +133,24 @@ func getExchangeRate(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		resposta := Response{Bid: cotacao.Usdbrl.Bid}
+		response := Response{Bid: excRate.Usdbrl.Bid}
 
 		go func() {
 			log.Print("received: ")
-			json.NewEncoder(log.Writer()).Encode(cotacao.Usdbrl)
+			json.NewEncoder(log.Writer()).Encode(excRate.Usdbrl)
 			log.Print("sent: ")
-			json.NewEncoder(log.Writer()).Encode(resposta)
+			json.NewEncoder(log.Writer()).Encode(response)
 		}()
 
 		go func() {
-			err = saveExchangeRate(cotacao)
+			err = saveExchangeRate(excRate)
 			if err != nil {
 				log.Println("db: ", err.Error())
 			}
 		}()
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(resposta)
+		json.NewEncoder(w).Encode(response)
 
 	}
 }
@@ -191,16 +202,16 @@ func execQuery(ctx context.Context) (*ExchangeRate, error) {
 		}
 		defer res.Body.Close()
 
-		body, error := io.ReadAll(res.Body)
-		if error != nil {
-			log.Println("could not read body: ", error)
-			return nil, error
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			log.Println("could not read body: ", err)
+			return nil, err
 		}
 		var c ExchangeRate
-		error = json.Unmarshal(body, &c)
-		if error != nil {
-			log.Println("could not unmarshal body: ", error)
-			return nil, error
+		err = json.Unmarshal(body, &c)
+		if err != nil {
+			log.Println("could not unmarshal body: ", err)
+			return nil, err
 		}
 		return &c, nil
 	}

@@ -40,7 +40,7 @@ func main() {
 
 	go func() {
 		defer wg.Done()
-		log.Print("recebido: ")
+		log.Print("received: ")
 		json.NewEncoder(log.Writer()).Encode(response)
 	}()
 
