@@ -1,0 +1,78 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "Api para buscar e guardar cotação do dólar",
+        "title": "Api Cotação do Dólar",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "Antonio Francisco Macedo de Oliveira",
+            "url": "http://github.com/antoniofmoliveira/fullcycle-client-server-api",
+            "email": "antoniofmoliveira@gmail.com"
+        },
+        "license": {
+            "name": "MIT",
+            "url": "http://github.com/antoniofmoliveira/fullcycle-client-server-api/license.txt"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "paths": {
+        "/cotacao/": {
+            "get": {
+                "description": "Get a exchange rate for dollar",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "exchange rate"
+                ],
+                "summary": "Get a exchange rate for dollar",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ResponseOutput"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Message"
+                        }
+                    },
+                    "504": {
+                        "description": "Gateway Timeout",
+                        "schema": {
+                            "$ref": "#/definitions/dto.Message"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "dto.Message": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.ResponseOutput": {
+            "type": "object",
+            "properties": {
+                "bid": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}
