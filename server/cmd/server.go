@@ -50,7 +50,7 @@ func main() {
 	exchangeRateDB := database.NewExchangeRate(db)
 	exchangeRateHandler := handlers.NewExchangeRateHandler(exchangeRateDB)
 
-	server := &http.Server{Addr: ":8080"}
+	server := &http.Server{Addr: fmt.Sprintf(":%s", localconfig.Port)}
 
 	http.HandleFunc("/cotacao", exchangeRateHandler.GetExchangeRate)
 
