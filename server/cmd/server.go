@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/antoniofmoliveira/fullcycle-client-server-api/server/config"
 	_ "github.com/antoniofmoliveira/fullcycle-client-server-api/server/docs"
 	"github.com/antoniofmoliveira/fullcycle-client-server-api/server/internal/entity"
 	"github.com/antoniofmoliveira/fullcycle-client-server-api/server/internal/infra/database"
@@ -36,7 +37,10 @@ import (
 // @BasePath  /
 
 func main() {
-	db, err := gorm.Open(sqlite.Open("cotacao.db"), &gorm.Config{})
+
+	localconfig := config.NewConfig()
+
+	db, err := gorm.Open(sqlite.Open(localconfig.DbUrl), &gorm.Config{})
 	if err != nil {
 		log.Println("Failed to connect to database", err)
 		return
@@ -50,14 +54,16 @@ func main() {
 
 	http.HandleFunc("/cotacao", exchangeRateHandler.GetExchangeRate)
 
-	http.HandleFunc("/docs/", httpSwagger.Handler(httpSwagger.URL("http://localhost:8080/docs/swagger.json")))
+	url := fmt.Sprintf("http://%s:%s/docs/swagger.json", localconfig.Host, localconfig.Port)
+	http.HandleFunc("/docs/", httpSwagger.Handler(httpSwagger.URL(url)))
 
 	http.HandleFunc("/docs/swagger.json", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./docs/swagger.json")
 	})
 
 	go func() {
-		fmt.Println("Server is running at http://localhost:8080")
+		url := fmt.Sprintf("http://%s:%s", localconfig.Host, localconfig.Port)
+		fmt.Println("Server is running at ", url)
 		if err := server.ListenAndServe(); err != nil && http.ErrServerClosed != err {
 			log.Fatalf("Could not listen on %s: %v\n", server.Addr, err)
 		}
