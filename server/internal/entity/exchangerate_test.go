@@ -25,3 +25,23 @@ func TestNewExchangeRate(t *testing.T) {
 	assert.Equal(t, "2022-01-01 00:00:00", exchangeRate.Timestamp)
 	assert.Equal(t, "2022-01-01 00:00:00", exchangeRate.CreateDate)
 }
+
+// TestExchangeRateValidate tests that Validate returns an error if the ExchangeRate is invalid.
+func TestExchangeRateValidate(t *testing.T) {
+	exchangeRate := ExchangeRate{
+		ID:         NewID(),
+		Code:       "USD",
+		Codein:     "BRL",
+		Name:       "Dollar",
+		High:       "10.00",
+		Low:        "5.00",
+		VarBid:     "0.50",
+		PctChange:  "0.50",
+		Bid:        "10.00",
+		Ask:        "10.00",
+		Timestamp:  "2022-01-01 00:00:00",
+		CreateDate: "2022-01-01 00:00:00",
+	}
+
+	assert.NotNil(t, exchangeRate.Validate())
+}
