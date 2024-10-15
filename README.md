@@ -77,3 +77,14 @@ antonio@DG15:~/DEV/full-cycle/client-server-api/client$
 ```txt
  Dólar: {5.5736}
 ```
+
+`.env` do server contém:
+
+```.env
+PORT=XXXX
+HOST=xxxxxxxx
+DB_URL=xxxxxxx.db
+```
+
+
+Acesse a documentação da api em `http://host:port/docs/swagger.json`.
